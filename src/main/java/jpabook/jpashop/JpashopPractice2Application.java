@@ -13,7 +13,7 @@ public class JpashopPractice2Application {
 
     }
 
-    //레이지 로딩 강제로부를떄
+    //레이지 로딩 강제로 부를떄
     @Bean
     Hibernate5Module hibernate5Module() {
         Hibernate5Module hibernate5Module = new Hibernate5Module();
