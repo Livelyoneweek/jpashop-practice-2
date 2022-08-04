@@ -44,6 +44,20 @@ public class OrderApiController {
         return collect;
     }
 
+    @GetMapping("/api/v3/orders")
+    public List<OrderDto> orderV3() {
+        List<Order> orders = orderRepository.findAllwithItem();
+
+        for (Order order : orders) {
+            System.out.println("order ref= "+order+" id="+order.getId());
+        }
+
+        List<OrderDto> collect = orders.stream()
+                .map(o -> new OrderDto(o))
+                .collect(Collectors.toList());
+        return collect;
+    }
+
     @Getter
     static class OrderDto {
 
@@ -60,9 +74,9 @@ public class OrderApiController {
             orderDate = order.getOrderDate();
             orderStatus = order.getStatus();
             address = order.getDelivery().getAddress();
-            order.getOrderItems().stream().forEach(o-> o.getItem().getName());
+            order.getOrderItems().stream().forEach(o -> o.getItem().getName());
             orderItems = order.getOrderItems().stream()
-                    .map(orderItem-> new OrderItemDto(orderItem))
+                    .map(orderItem -> new OrderItemDto(orderItem))
                     .collect(Collectors.toList());
         }
     }
