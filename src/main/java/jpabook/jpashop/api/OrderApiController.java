@@ -6,6 +6,8 @@ import jpabook.jpashop.domain.OrderItem;
 import jpabook.jpashop.domain.OrderStatus;
 import jpabook.jpashop.repository.OrderRepository;
 import jpabook.jpashop.repository.OrderSearch;
+import jpabook.jpashop.repository.order.query.OrderFlatDto;
+import jpabook.jpashop.repository.order.query.OrderItemQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryRepository;
 import lombok.Data;
@@ -19,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.*;
+
 @RestController
 @RequiredArgsConstructor
 public class OrderApiController {
@@ -26,6 +30,7 @@ public class OrderApiController {
     private final OrderRepository orderRepository;
     private final OrderQueryRepository orderQueryRepository;
 
+    //엔티티를 조회해서 그대로 반환 v1
     @GetMapping("/api/v1/orders")
     public List<Order> ordersV1() {
 
@@ -39,6 +44,7 @@ public class OrderApiController {
         return all;
     }
 
+    //엔티티 조회 후 DTO로 변환
     @GetMapping("/api/v2/orders")
     public List<OrderDto> orderV2() {
         List<Order> orders = orderRepository.findAllByString(new OrderSearch());
@@ -48,6 +54,7 @@ public class OrderApiController {
         return collect;
     }
 
+    //패치 조인으로 쿼리수 최적화
     @GetMapping("/api/v3/orders")
     public List<OrderDto> orderV3() {
         List<Order> orders = orderRepository.findAllwithItem();
@@ -62,6 +69,8 @@ public class OrderApiController {
         return collect;
     }
 
+    //컬랙션 페이징과 한계돌파
+    // ToOne관계는 패치 조인 사용하고, 컬랙션은 패치 조인 대신 지연 로딩 유지 후 hibernate.default_batch_fetch_size 또는 @BatchSize 사용
     @GetMapping("/api/v3.1/orders")
     public List<OrderDto> orderV3_page(
             @RequestParam(value = "offset", defaultValue = "0") int offset,
@@ -76,15 +85,31 @@ public class OrderApiController {
         return collect;
     }
 
+    //JPA에서 DTO를 직접조회
     @GetMapping("/api/v4/orders")
     public List<OrderQueryDto> ordersV4(){
         return orderQueryRepository.findOrderQueryDtos();
 
     }
 
+    //JPA에서 DTO를 직접조회, 컬랙션 조회 시 데이터 뻥튀기가 되므로 피하기 위해 In 절을 사용하여 메모리에 미리 조회해서 최적화
     @GetMapping("/api/v5/orders")
     public List<OrderQueryDto> ordersV5() {
         return orderQueryRepository.findAllByDto_optimization();
+    }
+
+    //페이징은안됌
+    //JPA에서 DTO를 직접조회, join 결과를 그대로 조회 후 애플리케이션에서 원하는 모양으로 직접변환
+    @GetMapping("/api/v6/orders")
+    public List<OrderQueryDto> ordersV6() {
+        List<OrderFlatDto> flats = orderQueryRepository.findAllByDto_flat();
+
+        return flats.stream()
+                .collect(groupingBy(o-> new OrderQueryDto(o.getOrderId(),o.getName(),o.getOrderDate(),o.getOrderStatus(),o.getAddress()),
+                        mapping(o-> new OrderItemQueryDto(o.getOrderId(),o.getItemName(),o.getOrderPrice(),o.getCount()), toList())
+                        )).entrySet().stream()
+                .map(e-> new OrderQueryDto(e.getKey().getOrderId(),e.getKey().getName(),e.getKey().getOrderDate(),e.getKey().getOrderStatus(),e.getKey().getAddress(),e.getValue()))
+                .collect(toList());
     }
 
     @Getter

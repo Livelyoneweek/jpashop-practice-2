@@ -16,22 +16,23 @@ public class OrderQueryRepository {
 
 
     public List<OrderQueryDto> findOrderQueryDtos() {
-        List<OrderQueryDto> result = findOrders();
+        List<OrderQueryDto> result = findOrders(); //query 1번
 
         result.forEach(o -> {
-            List<OrderItemQueryDto> orderItems = findOrderItems(o.getOrderId());
+            List<OrderItemQueryDto> orderItems = findOrderItems(o.getOrderId()); //query N번
             o.setOrderItems(orderItems);
         });
 
         return result;
     }
 
+    /////////////////////////////////////////////////////////////////v5
     public List<OrderQueryDto> findAllByDto_optimization() {
-        List<OrderQueryDto> result = findOrders();
+        List<OrderQueryDto> result = findOrders(); //query 1번
 
         List<Long> orderIds = toOrderIds(result);
 
-        Map<Long, List<OrderItemQueryDto>> orderItemMap = findOrderItemMap(orderIds);
+        Map<Long, List<OrderItemQueryDto>> orderItemMap = findOrderItemMap(orderIds); //query 1번
 
         result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
 
@@ -78,5 +79,17 @@ public class OrderQueryRepository {
                 .getResultList();
     }
 
+    //////////////////////////////////////////////////////////////////////////////////v6
 
+    public List<OrderFlatDto> findAllByDto_flat() {
+        return em.createQuery(
+                "select new jpabook.jpashop.repository.order.query.OrderFlatDto(o.id,m.name,o.orderDate,o.status,d.address,i.name,oi.orderPrice,oi.count) " +
+                        "from Order o " +
+                        "join o.member m " +
+                        "join o.delivery d " +
+                        "join o.orderItems oi " +
+                        "join oi.item i",OrderFlatDto.class)
+                .getResultList();
+
+    }
 }
