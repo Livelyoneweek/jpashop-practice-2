@@ -54,6 +54,8 @@ public class OrderApiController {
         return collect;
     }
 
+
+
     //패치 조인으로 쿼리수 최적화
     @GetMapping("/api/v3/orders")
     public List<OrderDto> orderV3() {
@@ -66,6 +68,7 @@ public class OrderApiController {
         List<OrderDto> collect = orders.stream()
                 .map(o -> new OrderDto(o))
                 .collect(Collectors.toList());
+
         return collect;
     }
 
